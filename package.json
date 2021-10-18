@@ -1,0 +1,23 @@
+{
+  "name": "sistema-ghpages",
+  "version": "1.0.0",
+  "description": "Sistema Solar en Babylonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FabriCubi/sistema-ghpages.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FabriCubi/sistema-ghpages/issues"
+  },
+  "homepage": "https://github.com/FabriCubi/sistema-ghpages#readme",
+  "dependencies": {
+    "gh-pages": "^3.2.3"
+  }
+}
