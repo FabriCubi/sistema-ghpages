@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Sistema Solar</title>
+
+        <!-- Babylon.js -->
+        <script src="https://preview.babylonjs.com/babylon.js"></script>
+        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+    var canvas = document.querySelector("#renderCanvas");
+
+    var engine = null;
+    var scene = null;
+    var sceneToRender = null;
+    var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: true}); };
+
+    const crearScene = () =>{
+        const scene = new BABYLON.Scene(engine);
+        scene.clearColor = new BABYLON.Color3.Black;
+
+        // Parameters : name, position, scene
+        const camera = new BABYLON.UniversalCamera("UniversalCamera", new BABYLON.Vector3(0, 0, -10), scene);
+    
+        // Targets the camera to a particular position. In this case the scene origin
+        camera.setTarget(BABYLON.Vector3.Zero());
+        // Add a camera to the scene and attach it to the canvas
+        //const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 25, new BABYLON.Vector3(0, 0, 0), scene);
+        camera.attachControl(canvas, true);
+
+        // Add a light
+        var light = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0,0,-0.5), scene);
+        //Want to dim or brighten the light? 
+        light.intensity = 6;
+
+        const widthSegments = 1;
+        //create a sphere
+        //var solGeometry =  BABYLON.MeshBuilder.CreateDisc("disc", {tessellation: 6,sideOrientation: -1});
+        var solGeometry = BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 1});
+        var tierraGeometry = BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 1});
+        var lunaGeometry =  BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 0.5});
+        var saturnoGeometry =  BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 1});
+        var saturnoGeometryDisc =  BABYLON.MeshBuilder.CreateDisc("disc", {radius:0.8,tessellation: 50,sideOrientation: -1});
+        var cometaGeometry =  BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 0.5});
+        
+        material(solGeometry,"./images/sun.jpg");
+        material(tierraGeometry,"./images/earth.jpg");
+        material(lunaGeometry,"./images/moon.jpg");
+        material(saturnoGeometry,"./images/saturn.jpg");
+        material(cometaGeometry,"./images/neptune.jpg");
+
+        var rotarZ = new BABYLON.Vector3(0, 0, 1);
+        var angle = 0.01;
+        var phi = 0;
+        solGeometry.position.z = 1;
+        solGeometry.addChild(tierraGeometry);
+        tierraGeometry.position.x = 4;
+        tierraGeometry.addChild(lunaGeometry);
+        lunaGeometry.position.x = 1;
+        solGeometry.addChild(saturnoGeometry);
+        saturnoGeometry.position.x = 8;
+        solGeometry.addChild(saturnoGeometryDisc);
+        saturnoGeometryDisc.position.x = 8; //Misma orbita como si fuera 
+        //Si comento esto se convierte en elipsoide
+        //solGeometry.addChild(cometaGeometry);
+        scene.registerBeforeRender(function() {
+            solGeometry.rotate(rotarZ, angle, BABYLON.Space.WORLD);
+            tierraGeometry.rotate(rotarZ,angle+0.08, BABYLON.Space.WORLD);
+            lunaGeometry.rotate(rotarZ, angle+0.1, BABYLON.Space.WORLD);
+            saturnoGeometry.rotate(rotarZ, angle+0.04, BABYLON.Space.WORLD);
+            cometaGeometry.rotate(rotarZ, angle+0.1, BABYLON.Space.World);
+            cometaGeometry.position = new BABYLON.Vector3(7 * Math.cos(phi), 25 * Math.sin(phi), 1);
+            phi +=0.01;
+        })
+
+        return scene;
+    }
+    
+    function material(geometry, textura){
+        var Material = new BABYLON.StandardMaterial("ground", scene);
+        Material.diffuseTexture = new BABYLON.Texture(textura, scene);
+        Material.diffuseTexture.vScale = -1;
+        geometry.material = Material;
+    }
+      
+    window.initFunction = async function() {
+                    var asyncEngineCreation = async function() {
+                        try {
+                        return createDefaultEngine();
+                        } catch(e) {
+                        console.log("the available createEngine function failed. Creating the default engine instead");
+                        return createDefaultEngine();
+                        }
+                    }
+
+                    window.engine = await asyncEngineCreation();
+        if (!engine) throw 'engine should not be null.';
+        window.scene = crearScene();};
+        initFunction().then(() => {sceneToRender = scene        
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
