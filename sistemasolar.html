@@ -7,10 +7,6 @@
 
         <!-- Babylon.js -->
         <script src="https://preview.babylonjs.com/babylon.js"></script>
-        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
-        <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
-        <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
-        <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
 
         <style>
             html, body {
@@ -31,74 +27,94 @@
 <body>
     <canvas id="renderCanvas"></canvas>
     <script>
+    // Obtenemos el canvas para la escena. 
     var canvas = document.querySelector("#renderCanvas");
-
     var engine = null;
     var scene = null;
     var sceneToRender = null;
+    // Custom Engine para usar -es posible agregar mas parametros-
     var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: true}); };
 
-    const crearScene = () =>{
+    //Funcion crear la escena.
+    const crearScene = () => {
+        // Creamos una escena por medio del engine.
         const scene = new BABYLON.Scene(engine);
+        // Color de fondo para la escena.
         scene.clearColor = new BABYLON.Color3.Black;
-
+        // Add a camera to the scene and attach it to the canvas
         // Parameters : name, position, scene
         const camera = new BABYLON.UniversalCamera("UniversalCamera", new BABYLON.Vector3(0, 0, -10), scene);
-    
+        //const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 25, new BABYLON.Vector3(0, 0, 0), scene);
+
         // Targets the camera to a particular position. In this case the scene origin
         camera.setTarget(BABYLON.Vector3.Zero());
-        // Add a camera to the scene and attach it to the canvas
-        //const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 25, new BABYLON.Vector3(0, 0, 0), scene);
+        // Camera <==> canvas 
         camera.attachControl(canvas, true);
 
-        // Add a light
+        // Add a light 
         var light = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0,0,-0.5), scene);
-        //Want to dim or brighten the light? 
-        light.intensity = 6;
-
-        const widthSegments = 1;
-        //create a sphere
-        //var solGeometry =  BABYLON.MeshBuilder.CreateDisc("disc", {tessellation: 6,sideOrientation: -1});
-        var solGeometry = BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 1});
-        var tierraGeometry = BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 1});
-        var lunaGeometry =  BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 0.5});
-        var saturnoGeometry =  BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 1});
-        var saturnoGeometryDisc =  BABYLON.MeshBuilder.CreateDisc("disc", {radius:0.8,tessellation: 50,sideOrientation: -1});
-        var cometaGeometry =  BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 0.5});
+        //  Want to dim or bighten the light? 
+        light.intensity = 3;
+        // Cantidad de lineas para la esfera
+        const SphereSegments = 1;
         
+        // Primitivas o geometrias para  los planetas.
+        //var solGeometry =  BABYLON.MeshBuilder.CreateDisc("disc", {tessellation: 6,sideOrientation: -1});
+        var solGeometry = BABYLON.MeshBuilder.CreateSphere("sphere", {segments: SphereSegments ,diameter: 2});
+        var tierraGeometry = BABYLON.MeshBuilder.CreateSphere("sphere", {segments: SphereSegments ,diameter: 1});
+        var lunaGeometry =  BABYLON.MeshBuilder.CreateSphere("sphere", {segments: SphereSegments ,diameter: 0.5});
+        var saturnoGeometry =  BABYLON.MeshBuilder.CreateSphere("sphere", {segments: SphereSegments ,diameter: 1});
+        var saturnoGeometryDisc =  BABYLON.MeshBuilder.CreateDisc("disc", {radius:0.8,tessellation: 50,sideOrientation: -1});
+        //var cometaGeometry =  BABYLON.MeshBuilder.CreateSphere("sphere", {segments: widthSegments ,diameter: 0.5});
+        var cometaGeometry = BABYLON.Mesh.CreatePolyhedron("shape" , {type: 1, size: 0.2}, scene);
+
+        // Texturas de los planetas
         material(solGeometry,"./images/sun.jpg");
         material(tierraGeometry,"./images/earth.jpg");
         material(lunaGeometry,"./images/moon.jpg");
         material(saturnoGeometry,"./images/saturn.jpg");
         material(cometaGeometry,"./images/neptune.jpg");
 
+        // Por donde rotar -eje-
         var rotarZ = new BABYLON.Vector3(0, 0, 1);
+        // Angulo 
         var angle = 0.01;
+        // utilizado para la orbita del cometa.
         var phi = 0;
+        // Ubicamos en z=1 al sol.
         solGeometry.position.z = 1;
+        // Parent and Child -mesh-
         solGeometry.addChild(tierraGeometry);
         tierraGeometry.position.x = 4;
-        tierraGeometry.addChild(lunaGeometry);
+        tierraGeometry.addChild(lunaGeometry); // La Luna tiene como pivote a la tierra.
         lunaGeometry.position.x = 1;
         solGeometry.addChild(saturnoGeometry);
         saturnoGeometry.position.x = 8;
         solGeometry.addChild(saturnoGeometryDisc);
-        saturnoGeometryDisc.position.x = 8; //Misma orbita como si fuera 
-        //Si comento esto se convierte en elipsoide
+        saturnoGeometryDisc.position.x = 8; //  Misma orbita como si fuera 
+        saturnoGeometry.position.y= -8;
+        saturnoGeometryDisc.position.y = -8;
+        //  Si comento esto se convierte en elipsoide
         //solGeometry.addChild(cometaGeometry);
+
+        //Registrar antes de renderizar
         scene.registerBeforeRender(function() {
+            // Mesh Transformations
+            // Los marcos de referencia, en 3D, están formados por un origen y tres ejes perpendiculares entre sí a través del origen. 
+            //Cuando se crean en Babylon.js, los objetos se colocan usando un marco de referencia en World Space 
+            //donde hay dos ejes horizontales, xyz, y un eje y vertical en un sistema para zurdos.
             solGeometry.rotate(rotarZ, angle, BABYLON.Space.WORLD);
             tierraGeometry.rotate(rotarZ,angle+0.08, BABYLON.Space.WORLD);
             lunaGeometry.rotate(rotarZ, angle+0.1, BABYLON.Space.WORLD);
             saturnoGeometry.rotate(rotarZ, angle+0.04, BABYLON.Space.WORLD);
-            cometaGeometry.rotate(rotarZ, angle+0.1, BABYLON.Space.World);
+            cometaGeometry.rotate(rotarZ, angle+0.1, BABYLON.Space.WORLD);
             cometaGeometry.position = new BABYLON.Vector3(7 * Math.cos(phi), 25 * Math.sin(phi), 1);
             phi +=0.01;
         })
 
         return scene;
     }
-    
+    // Funcion para cargar la textura dependiendo de la geometria.
     function material(geometry, textura){
         var Material = new BABYLON.StandardMaterial("ground", scene);
         Material.diffuseTexture = new BABYLON.Texture(textura, scene);
